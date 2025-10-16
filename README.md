@@ -440,8 +440,8 @@ MIT License - Voir [LICENSE](LICENSE) pour plus de détails.
 ## 👤 Auteur
 
 **Votre Nom**
-- GitHub : [@votre-username](https://github.com/votre-username)
-- LinkedIn : [Votre Profil](https://linkedin.com/in/votre-profil)
+- GitHub : [@MatthALXdev](https://github.com/MatthALXdev)
+- LinkedIn : [matth-alx-dev](https://www.linkedin.com/in/matth-alx-dev/)
 
 ---
 
@@ -449,4 +449,4 @@ MIT License - Voir [LICENSE](LICENSE) pour plus de détails.
 
 ---
 
-**🚀 Construit avec passion et Claude Code**
+**🚀 Construit avec passion **

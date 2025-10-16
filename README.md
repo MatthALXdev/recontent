@@ -439,7 +439,7 @@ MIT License - Voir [LICENSE](LICENSE) pour plus de détails.
 
 ## 👤 Auteur
 
-**Votre Nom**
+**Matthieu Alix**
 - GitHub : [@MatthALXdev](https://github.com/MatthALXdev)
 - LinkedIn : [matth-alx-dev](https://www.linkedin.com/in/matth-alx-dev/)
 

@@ -1,0 +1,22 @@
+{
+  "name": "recontent-api",
+  "version": "1.0.0",
+  "description": "API Node.js pour ReContent.dev - Proxy Mistral AI",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": ["api", "mistral", "express", "proxy"],
+  "author": "NEXUS Project",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

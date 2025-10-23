@@ -1,0 +1,59 @@
+# ===========================================
+# Docker ignore - Root
+# ===========================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+LICENSE
+*.md
+.docs/
+
+# Environment variables (CRITICAL - never include in images)
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Build outputs
+dist
+build
+.next
+
+# Logs
+logs
+*.log
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Testing
+coverage
+.nyc_output
+*.test.js
+*.spec.js

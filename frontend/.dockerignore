@@ -1,0 +1,64 @@
+# ===========================================
+# Docker ignore - Frontend
+# ===========================================
+
+# Dependencies (will be installed in container)
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output (will be generated in container)
+dist
+dist-ssr
+build
+.next
+
+# Environment variables (CRITICAL)
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Logs
+logs
+*.log
+
+# IDE
+.vscode
+!.vscode/extensions.json
+.idea
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
+.nyc_output
+*.test.js
+*.test.jsx
+*.spec.js
+*.spec.jsx
+
+# Docker
+Dockerfile*
+.dockerignore
+
+# Development
+*.local

@@ -1,0 +1,64 @@
+version: '3.8'
+
+# ===========================================
+# ReContent.dev - Environnement de développement
+# ===========================================
+# Usage: docker-compose -f docker-compose.dev.yml up
+# Pour tester localement sans Traefik
+
+networks:
+  recontent-network:
+    driver: bridge
+    name: nexus-recontent-dev
+
+services:
+  # ===========================================
+  # API Node.js (développement)
+  # ===========================================
+  recontent-api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: recontent-api:dev
+    container_name: recontent-api
+    restart: unless-stopped
+    environment:
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - API_PORT=3002
+      - NODE_ENV=development
+      - TZ=${TZ:-Europe/Paris}
+    ports:
+      - "3002:3002"  # Exposé en dev pour tests directs
+    networks:
+      - recontent-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3002/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===========================================
+  # Frontend React (développement)
+  # ===========================================
+  recontent-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: recontent-frontend:dev
+    container_name: recontent-frontend
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-Europe/Paris}
+    ports:
+      - "8090:80"  # Exposé en dev
+    networks:
+      - recontent-network
+    depends_on:
+      - recontent-api
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

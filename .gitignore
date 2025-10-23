@@ -2,6 +2,7 @@
 # Notes personnelles (ne pas commiter)
 # ===========================================
 .docs/
+.claude/
 
 # ===========================================
 # Dependencies

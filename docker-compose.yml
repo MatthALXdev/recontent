@@ -48,20 +48,23 @@ services:
       retries: 3
       start_period: 40s
     labels:
+    
       # Traefik activation
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-network"
 
-      # API Router - Path prefix /api
+      # Router: on accepte /api/* sur ce host
       - "traefik.http.routers.recontent-api.rule=Host(`recontent.devamalix.fr`) && PathPrefix(`/api`)"
       - "traefik.http.routers.recontent-api.entrypoints=websecure"
       - "traefik.http.routers.recontent-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.recontent-api.priority=100"
 
-      # Middleware: Strip /api prefix before forwarding to backend
-      - "traefik.http.middlewares.recontent-api-stripprefix.stripprefix.prefixes=/api"
-      - "traefik.http.routers.recontent-api.middlewares=recontent-api-stripprefix"
+    # 🔁 Réécriture: /api/recontent/<path> → /<path>
+      - "traefik.http.middlewares.recontent-api-rewrite.replacepathregex.regex=^/api/recontent/(.*)"
+      - "traefik.http.middlewares.recontent-api-rewrite.replacepathregex.replacement=/$$1"
+      - "traefik.http.routers.recontent-api.middlewares=recontent-api-rewrite"
 
-      # Service configuration
+    # Service (port interne du conteneur API)
       - "traefik.http.services.recontent-api.loadbalancer.server.port=3002"
 
       # Watchtower auto-update
@@ -83,7 +86,7 @@ services:
       - recontent-network
       - traefik-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/health"]
       interval: 30s
       timeout: 5s
       retries: 3

@@ -1,0 +1,108 @@
+version: '3.8'
+
+# ===========================================
+# ReContent.dev - Configuration NEXUS (local)
+# ===========================================
+# Environnement: Serveur Nexus (192.168.1.22)
+# Usage: docker compose -f docker-compose.nexus.yml up -d
+#
+# Différences vs Production VPS:
+# - Domain: recontent.nexus.local (au lieu de recontent.devamalix.fr)
+# - EntryPoint: web (HTTP) au lieu de websecure (HTTPS)
+# - Pas de certificat Let's Encrypt
+# - Architecture identique pour tester avant déploiement prod
+
+networks:
+  # Réseau interne pour communication inter-services
+  recontent-network:
+    driver: bridge
+    name: nexus-recontent
+
+  # Réseau Traefik externe (doit déjà exister)
+  traefik-network:
+    external: true
+    name: traefik-network
+
+services:
+  # ===========================================
+  # API Node.js (Express + Mistral AI)
+  # ===========================================
+  recontent-api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: recontent-api:nexus
+    container_name: nexus-recontent-api
+    restart: unless-stopped
+    environment:
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - API_PORT=3002
+      - NODE_ENV=production
+      - TZ=${TZ:-Europe/Paris}
+    # NOTE: Port NON exposé en mode Traefik
+    # Accessible uniquement via Traefik
+    networks:
+      - recontent-network
+      - traefik-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3002/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      # Traefik activation
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-network"
+
+      # Router: on accepte /api/* sur ce host
+      - "traefik.http.routers.recontent-api-nexus.rule=Host(`recontent.nexus.local`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.recontent-api-nexus.entrypoints=web"
+      - "traefik.http.routers.recontent-api-nexus.priority=100"
+
+      # Réécriture: /api/recontent/<path> → /<path>
+      - "traefik.http.middlewares.recontent-api-rewrite-nexus.replacepathregex.regex=^/api/recontent/(.*)"
+      - "traefik.http.middlewares.recontent-api-rewrite-nexus.replacepathregex.replacement=/$$1"
+      - "traefik.http.routers.recontent-api-nexus.middlewares=recontent-api-rewrite-nexus"
+
+      # Service (port interne du conteneur API)
+      - "traefik.http.services.recontent-api-nexus.loadbalancer.server.port=3002"
+
+  # ===========================================
+  # Frontend React (Vite build + Nginx)
+  # ===========================================
+  recontent-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: recontent-frontend:nexus
+    container_name: nexus-recontent-frontend
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-Europe/Paris}
+    networks:
+      - recontent-network
+      - traefik-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      # Traefik activation
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-network"
+
+      # Frontend Router - Host only (root domain)
+      - "traefik.http.routers.recontent-frontend-nexus.rule=Host(`recontent.nexus.local`)"
+      - "traefik.http.routers.recontent-frontend-nexus.entrypoints=web"
+
+      # Service configuration
+      - "traefik.http.services.recontent-frontend-nexus.loadbalancer.server.port=80"
+
+      # Security headers middleware (optionnel en local)
+      - "traefik.http.middlewares.recontent-security-headers-nexus.headers.framedeny=true"
+      - "traefik.http.middlewares.recontent-security-headers-nexus.headers.contenttypenosniff=true"
+      - "traefik.http.middlewares.recontent-security-headers-nexus.headers.browserxssfilter=true"
+      - "traefik.http.routers.recontent-frontend-nexus.middlewares=recontent-security-headers-nexus"

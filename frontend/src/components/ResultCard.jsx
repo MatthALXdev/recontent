@@ -48,11 +48,18 @@ export default function ResultCard({ platform, content, onRegenerate }) {
   const Icon = config.icon;
   const limit = PLATFORM_LIMITS[platform];
 
+  // Check if content is an error object
+  const isError = typeof content === 'object' && content !== null && content.error;
+
   // Synchroniser currentContent quand content change (changement d'onglet)
   useEffect(() => {
-    console.log('📝 ResultCard - Platform:', platform, 'Content preview:', content?.substring(0, 50));
+    if (!isError) {
+      console.log('📝 ResultCard - Platform:', platform, 'Content preview:', content?.substring(0, 50));
+    } else {
+      console.error('❌ ResultCard - Platform:', platform, 'Error:', content);
+    }
     setCurrentContent(content);
-  }, [content, platform]);
+  }, [content, platform, isError]);
 
   return (
     <div className="animate-fade-in">
@@ -66,11 +73,24 @@ export default function ResultCard({ platform, content, onRegenerate }) {
           <h2 className="text-lg sm:text-xl font-semibold text-white">{config.title}</h2>
         </div>
 
-        {/* Rendu conditionnel selon la plateforme */}
-        {platform === 'twitter' ? (
-          <TwitterThreadCard content={currentContent} />
+        {/* Show error message if content is an error object */}
+        {isError ? (
+          <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4">
+            <h3 className="text-red-400 font-semibold mb-2">⚠️ Generation Failed</h3>
+            <p className="text-red-300 text-sm mb-2">{currentContent.error}</p>
+            {currentContent.details && (
+              <p className="text-red-400 text-xs font-mono bg-red-950/50 p-2 rounded">
+                {currentContent.details}
+              </p>
+            )}
+          </div>
         ) : (
-          <MarkdownPreview content={currentContent} platform={platform} />
+          /* Rendu conditionnel selon la plateforme */
+          platform === 'twitter' ? (
+            <TwitterThreadCard content={currentContent} />
+          ) : (
+            <MarkdownPreview content={currentContent} platform={platform} />
+          )
         )}
       </div>
     </div>

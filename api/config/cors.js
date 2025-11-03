@@ -16,6 +16,7 @@ const allowedOrigins = isProduction
       'http://localhost:5173',
       'http://127.0.0.1:8090',
       'http://127.0.0.1:5173',
+      'http://recontent.nexus.local',
     ];
 
 // CORS options
@@ -29,7 +30,9 @@ const corsOptions = {
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback(new Error(`Origin ${origin} not allowed by CORS policy`));
+      // Pass false instead of Error to properly reject the origin
+      // This prevents CORS headers from being sent (correct behavior)
+      callback(null, false);
     }
   },
   methods: ['GET', 'POST'],

@@ -37,7 +37,7 @@ services:
     environment:
       - MISTRAL_API_KEY=${MISTRAL_API_KEY}
       - API_PORT=3002
-      - NODE_ENV=production
+      - NODE_ENV=development
       - TZ=${TZ:-Europe/Paris}
     # NOTE: Port NON exposé en mode Traefik
     # Accessible uniquement via Traefik

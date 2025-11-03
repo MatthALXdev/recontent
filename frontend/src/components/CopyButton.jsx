@@ -10,7 +10,21 @@ export default function CopyButton({ text }) {
     if (copied) return; // Prevent double-click
 
     try {
-      await navigator.clipboard.writeText(text);
+      // Check if clipboard API is available (requires HTTPS or localhost)
+      if (!navigator.clipboard) {
+        // Fallback for HTTP: use execCommand (deprecated but works)
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      } else {
+        await navigator.clipboard.writeText(text);
+      }
+
       setCopied(true);
       showToast('Copied to clipboard!', 'success');
 

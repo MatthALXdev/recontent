@@ -104,7 +104,7 @@ app.post('/generate', strictLimiter, validateGenerateRequest, async (req, res) =
       const response = await axios.post(
         MISTRAL_API_URL,
         {
-          model: 'mistral-small-latest',
+          model: 'open-mistral-7b',
           messages: [{ role: 'user', content: prompt }],
           max_tokens: maxTokens,
         },
@@ -293,7 +293,7 @@ app.post('/repurpose', strictLimiter, validateRepurposeRequest, async (req, res)
     const response = await axios.post(
       MISTRAL_API_URL,
       {
-        model: 'mistral-small-latest',
+        model: 'open-mistral-7b',
         messages: [
           {
             role: 'system',

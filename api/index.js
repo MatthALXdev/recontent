@@ -301,10 +301,15 @@ app.use((req, res) => {
     });
 });
 
-// Démarrage serveur
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ ReContent API listening on port ${PORT}`);
-    console.log(`🔑 Mistral API: ${MISTRAL_API_KEY && MISTRAL_API_KEY !== 'your_mistral_api_key_here' ? 'Configured ✅' : 'NOT configured ❌'}`);
-    console.log(`🌐 Health check: http://localhost:${PORT}/health`);
-    console.log(`📝 Generate endpoint: POST http://localhost:${PORT}/generate`);
-});
+// Export app pour les tests
+module.exports = app;
+
+// Démarrage serveur seulement si ce fichier est exécuté directement
+if (require.main === module) {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`✅ ReContent API listening on port ${PORT}`);
+        console.log(`🔑 Mistral API: ${MISTRAL_API_KEY && MISTRAL_API_KEY !== 'your_mistral_api_key_here' ? 'Configured ✅' : 'NOT configured ❌'}`);
+        console.log(`🌐 Health check: http://localhost:${PORT}/health`);
+        console.log(`📝 Generate endpoint: POST http://localhost:${PORT}/generate`);
+    });
+}

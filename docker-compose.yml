@@ -1,18 +1,16 @@
-version: '3.8'
-
 # ReContent.dev - React + Node.js + Nginx
-# Projet NEXUS - Environnement DEV/WEB
+# Application de repurposing de contenu avec Mistral AI
 
 networks:
   recontent-network:
     driver: bridge
-    name: nexus-recontent
+    name: recontent-network
 
 services:
   # Frontend React/Vite (build uniquement)
   recontent-frontend:
     image: node:20-alpine
-    container_name: nexus-recontent-frontend
+    container_name: recontent-frontend
     working_dir: /app
     volumes:
       - ./frontend:/app
@@ -26,7 +24,7 @@ services:
   # API Node.js (Express + proxy Mistral)
   recontent-api:
     image: node:20-alpine
-    container_name: nexus-recontent-api
+    container_name: recontent-api
     restart: unless-stopped
     working_dir: /app
     volumes:
@@ -53,7 +51,7 @@ services:
   # Nginx - Reverse Proxy + Frontend statique
   nginx-recontent:
     image: nginx:alpine
-    container_name: nexus-nginx-recontent
+    container_name: recontent-nginx
     restart: unless-stopped
     ports:
       - "8090:80"
@@ -61,7 +59,7 @@ services:
       - ./nginx/recontent.conf:/etc/nginx/conf.d/recontent.conf:ro
       - ./nginx/entrypoint.sh:/docker-entrypoint-custom.sh:ro
       - ./frontend/dist:/usr/share/nginx/html/recontent:ro
-      - ../../shared/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      # - ../../shared/nginx/nginx.conf:/etc/nginx/nginx.conf:ro  # Commented: file doesn't exist (is a directory)
     entrypoint: ["/docker-entrypoint-custom.sh"]
     depends_on:
       - recontent-api

@@ -225,6 +225,21 @@ docker compose down -v
 
 ## 🧪 Tests & Vérification
 
+### Tests automatisés
+
+```bash
+# Tests API (38 tests) - Express endpoints, validation, error handling
+docker compose --profile test run --rm recontent-test
+
+# Tests Frontend (15 tests) - React components, services, user interactions
+docker run --rm -v $(pwd)/frontend:/app -w /app node:20-alpine sh -c "npm test"
+```
+
+| Suite | Tests | Couverture |
+|-------|-------|------------|
+| API (backend) | 38 tests | health, generate, validation, errors |
+| Frontend | 15 tests | storage, mistralAPI, Home, CopyButton |
+
 ### Health checks
 ```bash
 # Vérifier que Nginx répond
@@ -255,93 +270,6 @@ curl -I http://localhost:8090/recontent/
 5. Vérifier que le thread est généré
 6. Tester le bouton "Copy"
 7. Vérifier l'historique dans "History"
-
----
-
-## 🐛 Troubleshooting
-
-### Problème : 404 sur les routes React après refresh
-
-**Cause :** Configuration Nginx ou basename React Router incorrecte.
-
-**Solution :**
-- Vérifier que `basename="/recontent"` est bien défini dans `frontend/src/App.jsx`
-- Vérifier que `base: '/recontent/'` est dans `frontend/vite.config.js`
-- Vérifier la directive `try_files` dans `nginx/recontent.conf`
-```nginx
-location /recontent/ {
-    alias /usr/share/nginx/html/recontent/;
-    try_files $uri $uri/ /recontent/index.html;
-}
-```
-
-### Problème : L'API ne démarre pas
-
-**Solution :**
-```bash
-# Voir les logs d'erreur
-docker logs nexus-recontent-api
-
-# Vérifier que la clé Mistral est configurée
-docker exec nexus-recontent-api env | grep MISTRAL
-
-# Redémarrer l'API
-docker compose restart recontent-api
-```
-
-### Problème : Nginx ne répond pas / "Site inaccessible"
-
-**Cause :** Erreur de configuration Nginx ou health check échoue.
-
-**Solution :**
-```bash
-# Vérifier le statut
-docker compose ps
-
-# Entrer dans le conteneur Nginx
-docker exec -it nexus-nginx-recontent sh
-
-# Tester la configuration Nginx
-nginx -t
-
-# Voir les logs d'erreur
-cat /var/log/nginx/recontent-error.log
-
-exit
-```
-
-### Problème : Le frontend ne charge pas (erreur 502)
-
-**Cause :** Le build Vite n'a pas été généré ou est vide.
-
-**Solution :**
-```bash
-# Vérifier que le build existe
-docker exec nexus-nginx-recontent ls /usr/share/nginx/html/recontent/
-# Doit contenir : index.html + dossier assets/
-
-# Si absent, rebuilder le frontend
-docker compose up recontent-frontend
-
-# Vérifier que le build est terminé
-docker compose logs recontent-frontend | grep "built in"
-```
-
-### Problème : Port déjà utilisé (8090 ou 3002)
-
-**Solution :**
-Modifier les ports dans `docker-compose.yml` :
-```yaml
-nginx-recontent:
-  ports:
-    - "8091:80"  # Au lieu de 8090
-
-recontent-api:
-  ports:
-    - "3003:3002"  # Au lieu de 3002
-```
-
-Puis redémarrer : `docker compose down && docker compose up -d`
 
 ---
 
@@ -401,31 +329,30 @@ Génère du contenu reformulé via Mistral AI.
 ### ✅ Phase 1 : MVP (Terminée)
 - [x] Interface utilisateur React + Vite
 - [x] Intégration Mistral AI
-- [x] Génération Twitter, LinkedIn, Dev.to
+- [x] Génération Twitter, LinkedIn, Dev.to, GitHub, Newsletter
 - [x] Système de profil utilisateur
 - [x] Historique des générations (LocalStorage)
+- [x] Export des résultats (.txt, .md)
 - [x] Dockerisation complète (frontend + API + Nginx)
 - [x] Configuration reverse proxy avec gestion SPA
 
-### 🔄 Phase 2 : Tests & Qualité (En cours)
-- [ ] Tests unitaires API (Jest)
-- [ ] Tests d'intégration
-- [ ] Coverage de code >70%
+### ✅ Phase 2 : Tests & Qualité (Terminée)
+- [x] Tests unitaires API (Vitest) - 38 tests
+- [x] Tests unitaires Frontend (Vitest) - 15 tests
+- [x] Coverage de code >70% (API: 67%, Frontend: 77%)
 - [ ] CI/CD avec GitHub Actions
 - [ ] Linting et formatting automatiques
 
-### 🚀 Phase 3 : Production
-- [ ] Déploiement sur VPS
-- [ ] Configuration HTTPS (Let's Encrypt)
-- [ ] Nom de domaine personnalisé
+### ✅ Phase 3 : Production (Terminée)
+- [x] Déploiement sur VPS
+- [x] Configuration HTTPS (Let's Encrypt)
+- [x] Nom de domaine personnalisé
 - [ ] Monitoring et alertes
 - [ ] Logs centralisés
 
 ### 🎨 Phase 4 : Fonctionnalités avancées
-- [ ] Export des résultats (PDF, MD, TXT)
 - [ ] Templates de prompts personnalisables
 - [ ] Support de plus de plateformes (Reddit, Medium, etc.)
-- [ ] Mode collaboratif (partage de générations)
 - [ ] Statistiques d'utilisation
 - [ ] Mode hors ligne avec cache
 

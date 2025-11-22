@@ -55,6 +55,22 @@ services:
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
 
+  # Service dédié aux tests (n'impacte pas la prod)
+  recontent-test:
+    image: node:20-alpine
+    container_name: recontent-test
+    working_dir: /app
+    volumes:
+      - ./api:/app
+    environment:
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - NODE_ENV=test
+    command: sh -c "npm install --include=dev && npm test"
+    networks:
+      - recontent-network
+    profiles:
+      - test
+
   # Nginx - Reverse Proxy + Frontend statique
   nginx-recontent:
     image: nginx:alpine

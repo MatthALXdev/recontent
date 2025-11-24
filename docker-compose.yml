@@ -1,8 +1,15 @@
-# ReContent.dev - React + Node.js + Nginx
-# Application de repurposing de contenu avec Mistral AI
+version: '3.8'
+
+# ===========================================
+# ReContent.dev - Production avec Traefik
+# ===========================================
+# Architecture:
+# - Frontend: React build servi par nginx
+# - API: Node.js Express (proxy Mistral AI)
+# - Traefik: Reverse proxy avec HTTPS automatique
 
 networks:
-  # Network interne pour API <-> Nginx
+  # Réseau interne pour communication inter-services
   recontent-network:
     driver: bridge
     name: recontent-network
@@ -12,102 +19,105 @@ networks:
     external: true
     name: traefik-network
 
-services:
-  # Frontend React/Vite (build uniquement)
-  recontent-frontend:
-    image: node:20-alpine
-    container_name: recontent-frontend
-    working_dir: /app
-    volumes:
-      - ./frontend:/app
-      - ./frontend/dist:/app/dist
-    command: sh -c "npm install --include=dev && npm run build"
-    environment:
-      - NODE_ENV=development
-    networks:
-      - recontent-network
+  # Réseau Traefik externe (doit déjà exister)
+  traefik-network:
+    external: true
 
-  # API Node.js (Express + proxy Mistral)
+services:
+  # ===========================================
+  # API Node.js (Express + Mistral AI)
+  # ===========================================
   recontent-api:
-    image: node:20-alpine
-    container_name: recontent-api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    image: recontent-api:latest
+    container_name: nexus-recontent-api
     restart: unless-stopped
-    working_dir: /app
-    volumes:
-      - ./api:/app
-    # Port NON exposé - accessible uniquement via nginx interne
-    # ports:
-    #   - "3002:3002"
     environment:
       - MISTRAL_API_KEY=${MISTRAL_API_KEY}
-      - API_PORT=${API_PORT:-3002}
-      - NODE_ENV=${NODE_ENV:-production}
+      - API_PORT=3002
+      - NODE_ENV=production
       - TZ=${TZ:-Europe/Paris}
-    command: sh -c "npm install && npm start"
+    # NOTE SÉCURITÉ: Port 3002 NON exposé publiquement
+    # L'API est uniquement accessible via Traefik
+    # ports:
+    #   - "3002:3002"  # COMMENTÉ pour production
     networks:
       - recontent-network
+      - traefik-network
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3002/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3002/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
     labels:
+    
+      # Traefik activation
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-network"
+
+      # Router: on accepte /api/* sur ce host
+      - "traefik.http.routers.recontent-api.rule=Host(`recontent.devamalix.fr`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.recontent-api.entrypoints=websecure"
+      - "traefik.http.routers.recontent-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.recontent-api.priority=100"
+
+    # 🔁 Réécriture: /api/recontent/<path> → /<path>
+      - "traefik.http.middlewares.recontent-api-rewrite.replacepathregex.regex=^/api/recontent/(.*)"
+      - "traefik.http.middlewares.recontent-api-rewrite.replacepathregex.replacement=/$$1"
+      - "traefik.http.routers.recontent-api.middlewares=recontent-api-rewrite"
+
+    # Service (port interne du conteneur API)
+      - "traefik.http.services.recontent-api.loadbalancer.server.port=3002"
+
+      # Watchtower auto-update
       - "com.centurylinklabs.watchtower.enable=true"
 
-  # Service dédié aux tests (n'impacte pas la prod)
-  recontent-test:
-    image: node:20-alpine
-    container_name: recontent-test
-    working_dir: /app
-    volumes:
-      - ./api:/app
-    environment:
-      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
-      - NODE_ENV=test
-    command: sh -c "npm install --include=dev && npm test"
-    networks:
-      - recontent-network
-    profiles:
-      - test
-
-  # Nginx - Reverse Proxy + Frontend statique
-  nginx-recontent:
-    image: nginx:alpine
-    container_name: recontent-nginx
+  # ===========================================
+  # Frontend React (Vite build + Nginx)
+  # ===========================================
+  recontent-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: recontent-frontend:latest
+    container_name: nexus-recontent-frontend
     restart: unless-stopped
-    # Port NON exposé - accessible uniquement via Traefik
-    # ports:
-    #   - "8090:80"
-    volumes:
-      - ./nginx/recontent.conf:/etc/nginx/conf.d/recontent.conf:ro
-      - ./nginx/entrypoint.sh:/docker-entrypoint-custom.sh:ro
-      - ./frontend/dist:/usr/share/nginx/html/recontent:ro
-    entrypoint: ["/docker-entrypoint-custom.sh"]
-    depends_on:
-      - recontent-api
+    environment:
+      - TZ=${TZ:-Europe/Paris}
     networks:
       - recontent-network
       - traefik-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/recontent/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/health"]
       interval: 30s
       timeout: 5s
       retries: 3
-
-    # Labels Traefik pour routage via recontent.nexus.local
+      start_period: 10s
     labels:
-      # Activation Traefik
+      # Traefik activation
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-network"
 
-      # Router HTTP (pas HTTPS en local)
-      - "traefik.http.routers.recontent.rule=Host(`recontent.nexus.local`)"
-      - "traefik.http.routers.recontent.entrypoints=web"
-      - "traefik.http.routers.recontent.service=recontent"
+      # Frontend Router - Host only (root domain)
+      - "traefik.http.routers.recontent-frontend.rule=Host(`recontent.devamalix.fr`)"
+      - "traefik.http.routers.recontent-frontend.entrypoints=websecure"
+      - "traefik.http.routers.recontent-frontend.tls.certresolver=letsencrypt"
 
-      # Service (port interne nginx)
-      - "traefik.http.services.recontent.loadbalancer.server.port=80"
+      # Service configuration
+      - "traefik.http.services.recontent-frontend.loadbalancer.server.port=80"
+
+      # Security headers middleware
+      - "traefik.http.middlewares.recontent-security-headers.headers.framedeny=true"
+      - "traefik.http.middlewares.recontent-security-headers.headers.contenttypenosniff=true"
+      - "traefik.http.middlewares.recontent-security-headers.headers.browserxssfilter=true"
+      - "traefik.http.middlewares.recontent-security-headers.headers.forcestsheader=true"
+      - "traefik.http.middlewares.recontent-security-headers.headers.stsincludesubdomains=true"
+      - "traefik.http.middlewares.recontent-security-headers.headers.stspreload=true"
+      - "traefik.http.middlewares.recontent-security-headers.headers.stsseconds=31536000"
+      - "traefik.http.routers.recontent-frontend.middlewares=recontent-security-headers"
 
       # Watchtower auto-update
       - "com.centurylinklabs.watchtower.enable=true"

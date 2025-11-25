@@ -374,3 +374,4 @@ MIT License - Voir [LICENSE](LICENSE) pour plus de détails.
 
 ⚠️ **Note de développement :** Ce projet est actuellement en développement actif dans le cadre d'une recherche d'alternance en développement fullstack (Bachelor). Contributions et suggestions bienvenues !
 
+# CI/CD Pipeline configured

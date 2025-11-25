@@ -362,29 +362,34 @@ app.use((err, req, res, next) => {
 });
 
 // ===========================================
-// Server Startup
+// Server Startup (only if run directly)
 // ===========================================
 
-app.listen(PORT, '0.0.0.0', () => {
-  logger.info(`✅ ReContent API v1.0.0 listening on port ${PORT}`);
-  logger.info(`🌍 Environment: ${NODE_ENV}`);
-  logger.info(
-    `🔑 Mistral API: ${MISTRAL_API_KEY && MISTRAL_API_KEY !== 'your_mistral_api_key_here' ? 'Configured ✅' : 'NOT configured ❌'}`
-  );
-  logger.info(`🔒 CORS: Whitelist enabled`);
-  logger.info(`🛡️  Rate limiting: Active`);
-  logger.info(`📝 Validation: Strict mode`);
-  logger.info(`🌐 Health check: http://localhost:${PORT}/health`);
-  logger.info(`📊 Generate endpoint: POST http://localhost:${PORT}/generate`);
-});
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
+    logger.info(`✅ ReContent API v1.0.0 listening on port ${PORT}`);
+    logger.info(`🌍 Environment: ${NODE_ENV}`);
+    logger.info(
+      `🔑 Mistral API: ${MISTRAL_API_KEY && MISTRAL_API_KEY !== 'your_mistral_api_key_here' ? 'Configured ✅' : 'NOT configured ❌'}`
+    );
+    logger.info(`🔒 CORS: Whitelist enabled`);
+    logger.info(`🛡️  Rate limiting: Active`);
+    logger.info(`📝 Validation: Strict mode`);
+    logger.info(`🌐 Health check: http://localhost:${PORT}/health`);
+    logger.info(`📊 Generate endpoint: POST http://localhost:${PORT}/generate`);
+  });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM signal received: closing HTTP server');
-  process.exit(0);
-});
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    logger.info('SIGTERM signal received: closing HTTP server');
+    process.exit(0);
+  });
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT signal received: closing HTTP server');
-  process.exit(0);
-});
+  process.on('SIGINT', () => {
+    logger.info('SIGINT signal received: closing HTTP server');
+    process.exit(0);
+  });
+}
+
+// Export for testing
+module.exports = app;

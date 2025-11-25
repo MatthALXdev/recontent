@@ -130,7 +130,7 @@ jobs:
       - name: Checkout Infra
         uses: actions/checkout@v4
         with:
-          repository: MatthALXdev/infra
+          repository: MatthALXdev/devamalix-infra
           ref: main
           path: shared
           token: ${{ secrets.INFRA_PAT }}

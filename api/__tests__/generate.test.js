@@ -4,7 +4,8 @@ import app from '../index.js';
 import MistralService from '../services/mistral.js';
 
 // Mock helpers
-const mockContent = 'This is test content about web development and best practices.';
+// Content must be at least 100 characters to pass validation
+const mockContent = 'This is test content about web development and best practices. We will discuss various topics including architecture, testing, and deployment strategies for modern web applications.';
 const mockProfile = {
   name: 'Test User',
   bio: 'Developer',
@@ -51,8 +52,8 @@ describe('POST /generate', () => {
         .send({ platforms: ['twitter'] });
 
       expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty('error', 'Missing required fields');
-      expect(response.body).toHaveProperty('required');
+      expect(response.body).toHaveProperty('error', 'Validation failed');
+      expect(response.body).toHaveProperty('details');
     });
 
     it('devrait rejeter si platforms manquant', async () => {
@@ -61,7 +62,7 @@ describe('POST /generate', () => {
         .send({ content: mockContent });
 
       expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty('error', 'Missing required fields');
+      expect(response.body).toHaveProperty('error', 'Validation failed');
     });
 
     it('devrait rejeter si platforms est vide', async () => {
@@ -70,7 +71,7 @@ describe('POST /generate', () => {
         .send({ content: mockContent, platforms: [] });
 
       expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Missing required fields');
+      expect(response.body.error).toBe('Validation failed');
     });
 
     it('devrait rejeter si platforms n\'est pas un array', async () => {
@@ -378,7 +379,7 @@ describe('POST /generate', () => {
       const response = await request(app)
         .post('/generate')
         .send({
-          content: 'Test content',
+          content: mockContent,
           platforms: ['twitter']
         });
 
@@ -432,13 +433,7 @@ describe('POST /generate', () => {
       expect(response.body.results.linkedin).toHaveProperty('error');
     });
 
-    it('devrait gérer les plateformes non supportées', async () => {
-      mockHttpClient.post.mockResolvedValue({
-        data: {
-          choices: [{ message: { content: 'Content' } }]
-        }
-      });
-
+    it('devrait rejeter les plateformes non supportées', async () => {
       const response = await request(app)
         .post('/generate')
         .send({
@@ -446,9 +441,9 @@ describe('POST /generate', () => {
           platforms: ['twitter', 'unknown_platform']
         });
 
-      expect(response.status).toBe(200);
-      expect(response.body.results.twitter).toBeDefined();
-      expect(response.body.results.unknown_platform).toHaveProperty('error');
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('Validation failed');
+      expect(response.body.details).toContain('Invalid platforms');
     });
 
     it('devrait rejeter si API key non configurée', async () => {
@@ -464,7 +459,7 @@ describe('POST /generate', () => {
         });
 
       expect(response.status).toBe(500);
-      expect(response.body.error).toBe('Mistral API key not configured');
+      expect(response.body.error).toBe('Service configuration error');
     });
   });
 

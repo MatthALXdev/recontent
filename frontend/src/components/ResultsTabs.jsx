@@ -19,7 +19,12 @@ export default function ResultsTabs({ results }) {
     console.log('📊 ResultsTabs - Results object:', results);
     console.log('📊 Available platforms:', Object.keys(results));
     console.log('📊 Active tab:', activeTab);
-    console.log('📊 Content for active tab:', results[activeTab]?.substring(0, 100));
+    const content = results[activeTab];
+    if (typeof content === 'string') {
+      console.log('📊 Content for active tab:', content.substring(0, 100));
+    } else {
+      console.log('📊 Content for active tab (object):', content);
+    }
   }, [results, activeTab]);
 
   return (

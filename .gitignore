@@ -19,6 +19,14 @@ frontend/dist/
 build/
 
 # ===========================================
+# Test coverage reports
+# ===========================================
+coverage/
+api/coverage/
+frontend/coverage/
+*.lcov
+
+# ===========================================
 # Environment variables (CRITIQUE)
 # ===========================================
 .env

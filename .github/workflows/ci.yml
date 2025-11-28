@@ -14,7 +14,6 @@ jobs:
   # JOB 1: Tests API Backend
   # ============================================
   test-api:
-    name: API Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -48,7 +47,6 @@ jobs:
   # JOB 2: Tests Frontend React
   # ============================================
   test-frontend:
-    name: Frontend Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -78,7 +76,6 @@ jobs:
   # JOB 3: Build Validation
   # ============================================
   build-validation:
-    name: Build Validation
     runs-on: ubuntu-latest
     needs: [test-api, test-frontend]
 
@@ -116,7 +113,6 @@ jobs:
   # JOB 4: Integration Test (PR vers main only)
   # ============================================
   integration-test:
-    name: Integration Test
     runs-on: ubuntu-latest
     needs: [build-validation]
     if: github.base_ref == 'main'
@@ -241,7 +237,6 @@ jobs:
   # JOB 5: Deploy to VPS (push main only)
   # ============================================
   deploy:
-    name: Deploy to VPS
     runs-on: ubuntu-latest
     needs: [test-api, test-frontend, build-validation]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'

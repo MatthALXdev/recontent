@@ -20,7 +20,6 @@ services:
     working_dir: /app
     volumes:
       - ./frontend:/app
-      - ./frontend/dist:/app/dist
     command: sh -c "npm install --include=dev && npm run build"
     environment:
       - NODE_ENV=development

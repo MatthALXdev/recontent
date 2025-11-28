@@ -148,8 +148,20 @@ jobs:
       - name: Build and start ReContent
         working-directory: recontent
         run: |
+          # Create dist directory to ensure proper volume mounting
+          mkdir -p frontend/dist
           # Build frontend
           docker compose run --rm recontent-frontend
+
+          # Verify build output exists
+          echo "📦 Verifying build output..."
+          ls -la frontend/dist/
+          if [ ! -f "frontend/dist/index.html" ]; then
+            echo "❌ Build failed: index.html not found in dist/"
+            exit 1
+          fi
+          echo "✅ Build artifacts present"
+
           # Start services
           docker compose up -d recontent-api nginx-recontent
           sleep 20

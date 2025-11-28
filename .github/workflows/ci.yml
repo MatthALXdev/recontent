@@ -141,7 +141,7 @@ jobs:
       - name: Start Traefik
         working-directory: shared/traefik
         run: |
-          docker compose up -d
+          docker compose -f docker-compose.ci.yml up -d
           sleep 5
           docker ps | grep traefik
 
@@ -172,6 +172,24 @@ jobs:
             | grep -q "recontent-nginx" \
             || (echo "❌ nginx-recontent not on traefik-network" && exit 1)
           echo "✅ nginx-recontent is on traefik-network"
+
+      - name: Wait for Traefik to register routes
+        run: |
+          echo "⏳ Waiting for Traefik to register ReContent routes..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8080/api/http/routers | grep -q "recontent"; then
+              echo "✅ ReContent router registered in Traefik (attempt $i)"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "❌ Timeout: ReContent router not registered after 30s"
+              echo "Available routers:"
+              curl -s http://localhost:8080/api/http/routers || true
+              exit 1
+            fi
+            echo "Waiting... (attempt $i/30)"
+            sleep 1
+          done
 
       - name: Test routing via Traefik
         run: |
@@ -204,7 +222,7 @@ jobs:
         if: failure()
         run: |
           echo "=== Traefik logs ==="
-          docker logs traefik 2>&1 | tail -50
+          docker logs traefik 2>&1 | tail -50 || true
           echo ""
           echo "=== ReContent API logs ==="
           docker logs recontent-api 2>&1 | tail -50 || true
@@ -216,7 +234,7 @@ jobs:
         if: always()
         run: |
           docker compose -f recontent/docker-compose.yml down -v || true
-          docker compose -f shared/traefik/docker-compose.yml down -v || true
+          docker compose -f shared/traefik/docker-compose.ci.yml down -v || true
           docker network rm traefik-network || true
 
   # ============================================

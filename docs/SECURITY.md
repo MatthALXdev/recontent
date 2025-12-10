@@ -364,7 +364,6 @@ npm update
 
 Si vous découvrez une vulnérabilité de sécurité, **NE PAS** créer d'issue publique.
 
-**Contact :** matthieu.alix@example.com
 
 **Informations à fournir :**
 - Description de la vulnérabilité

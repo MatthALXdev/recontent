@@ -107,15 +107,16 @@ docker-compose up -d
 docker-compose ps
 
 # Devrait afficher :
-# nexus-recontent-api          running (healthy)
-# nexus-recontent-frontend     running (healthy)
+# recontent-api          running (healthy)
+# recontent-frontend     running (healthy)
+# recontent-nginx        running (healthy)
 ```
 
 ### 2. Vérifier les logs
 
 ```bash
 # Logs de l'API
-docker logs -f nexus-recontent-api
+docker logs -f recontent-api
 
 # Devrait afficher :
 # ✅ ReContent API v1.0.0 listening on port 3002
@@ -126,7 +127,7 @@ docker logs -f nexus-recontent-api
 # 📝 Validation: Strict mode
 
 # Logs du frontend
-docker logs -f nexus-recontent-frontend
+docker logs -f recontent-frontend
 ```
 
 ### 3. Tester les endpoints
@@ -393,7 +394,6 @@ En cas de problème :
 3. Consulter [SECURITY.md](SECURITY.md) pour les tests de sécurité
 4. Consulter [README.md](README.md) pour la documentation générale
 
-**Contact :** matthieu.alix@example.com
 
 ---
 

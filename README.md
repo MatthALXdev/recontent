@@ -713,7 +713,7 @@ Développeur Fullstack DevOps
 - 🌐 **Portfolio** : [me.devamalix.fr](https://me.devamalix.fr)
 - 💼 **LinkedIn** : [matthieu-alix](https://linkedin.com/in/matthieu-alix)
 - 🐙 **GitHub** : [@MatthALXdev](https://github.com/MatthALXdev)
-- 📧 **Email** : matthieualix11@gmail.com
+- 📧 **Email** : matth.alx.dev@gmail.com
 
 ---
 

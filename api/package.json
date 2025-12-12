@@ -16,7 +16,7 @@
     "express",
     "proxy"
   ],
-  "author": "Matthieu Alix <matthieualix11@gmail.com>",
+  "author": "Matthieu Alix <matth.alx.dev@gmail.com>",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.6.2",

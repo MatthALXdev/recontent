@@ -5,7 +5,7 @@
 # Security: runs as non-root user, minimal attack surface
 
 # Stage 1: Dependencies
-FROM node:20-alpine AS dependencies
+FROM node:24.22.2-alpine AS dependencies
 
 WORKDIR /app
 
@@ -14,11 +14,11 @@ COPY package*.json ./
 
 # Install production dependencies only
 # npm ci ensures reproducible builds
-RUN npm ci --only=production && \
+RUN npm ci --omit=dev && \
     npm cache clean --force
 
 # Stage 2: Production
-FROM node:20-alpine AS production
+FROM node:24.22.2-alpine AS production
 
 # Add security labels
 LABEL maintainer="matthieu.alix@example.com"

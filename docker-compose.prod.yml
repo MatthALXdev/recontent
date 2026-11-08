@@ -1,0 +1,74 @@
+# =====================================================
+# ReContent - PRODUCTION VPS (recontent.devamalix.fr)
+# =====================================================
+# Reconstitué le 2026-11-05 à partir de `docker inspect` des conteneurs
+# de prod (créés le 2025-11-01 avec docker-compose v1 depuis un fichier
+# qui n'existe dans aucune version du dépôt git).
+# Voir ~/docs/20261105_correctifs-gravite-haute.md
+#
+# Sélectionné par défaut via COMPOSE_FILE dans .env (non versionné).
+# Usage : docker compose up -d --build
+# =====================================================
+
+name: recontent
+
+networks:
+  # Clé = "nexus-recontent" : doit correspondre au label
+  # com.docker.compose.network du réseau existant (créé par compose v1)
+  nexus-recontent:
+    name: nexus-recontent
+  traefik-network:
+    external: true
+    name: traefik-network
+
+services:
+  recontent-api:
+    build: ./api
+    image: recontent-api:20261108
+    container_name: nexus-recontent-api
+    restart: unless-stopped
+    environment:
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - API_PORT=3002
+      - NODE_ENV=production
+      - TZ=Europe/Paris
+    networks:
+      - nexus-recontent
+      - traefik-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-network"
+      - "traefik.http.routers.recontent-api.rule=Host(`recontent.devamalix.fr`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.recontent-api.entrypoints=websecure"
+      - "traefik.http.routers.recontent-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.recontent-api.priority=100"
+      - "traefik.http.routers.recontent-api.middlewares=recontent-api-rewrite"
+      - "traefik.http.middlewares.recontent-api-rewrite.replacepathregex.regex=^/api/recontent/(.*)"
+      - "traefik.http.middlewares.recontent-api-rewrite.replacepathregex.replacement=/$$1"
+      - "traefik.http.services.recontent-api.loadbalancer.server.port=3002"
+
+  recontent-frontend:
+    build: ./frontend
+    image: recontent-frontend:20261108
+    container_name: nexus-recontent-frontend
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Paris
+    networks:
+      - nexus-recontent
+      - traefik-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-network"
+      - "traefik.http.routers.recontent-frontend.rule=Host(`recontent.devamalix.fr`)"
+      - "traefik.http.routers.recontent-frontend.entrypoints=websecure"
+      - "traefik.http.routers.recontent-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.recontent-frontend.middlewares=recontent-security-headers"
+      - "traefik.http.middlewares.recontent-security-headers.headers.browserxssfilter=true"
+      - "traefik.http.middlewares.recontent-security-headers.headers.contenttypenosniff=true"
+      - "traefik.http.middlewares.recontent-security-headers.headers.forcestsheader=true"
+      - "traefik.http.middlewares.recontent-security-headers.headers.framedeny=true"
+      - "traefik.http.middlewares.recontent-security-headers.headers.stsincludesubdomains=true"
+      - "traefik.http.middlewares.recontent-security-headers.headers.stspreload=true"
+      - "traefik.http.middlewares.recontent-security-headers.headers.stsseconds=31536000"
+      - "traefik.http.services.recontent-frontend.loadbalancer.server.port=80"

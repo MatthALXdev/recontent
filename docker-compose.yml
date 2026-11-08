@@ -15,7 +15,7 @@ networks:
 services:
   # Frontend React/Vite (build uniquement)
   recontent-frontend:
-    image: node:20-alpine
+    image: node:24.22.2-alpine
     container_name: recontent-frontend
     working_dir: /app
     volumes:
@@ -28,7 +28,7 @@ services:
 
   # API Node.js (Express + proxy Mistral)
   recontent-api:
-    image: node:20-alpine
+    image: node:24.22.2-alpine
     container_name: recontent-api
     restart: unless-stopped
     working_dir: /app
@@ -56,7 +56,7 @@ services:
 
   # Service dédié aux tests (n'impacte pas la prod)
   recontent-test:
-    image: node:20-alpine
+    image: node:24.22.2-alpine
     container_name: recontent-test
     working_dir: /app
     volumes:
@@ -72,7 +72,7 @@ services:
 
   # Nginx - Reverse Proxy + Frontend statique
   nginx-recontent:
-    image: nginx:alpine
+    image: nginx:1.30.6-alpine
     container_name: recontent-nginx
     restart: unless-stopped
     # Port NON exposé - accessible uniquement via Traefik

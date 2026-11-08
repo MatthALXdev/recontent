@@ -6,7 +6,7 @@
 # - Stage 2: Serve static files with nginx
 
 # Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:24.22.2-alpine AS builder
 
 WORKDIR /app
 
@@ -25,7 +25,7 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Production with Nginx
-FROM nginx:alpine AS production
+FROM nginx:1.30.6-alpine AS production
 
 # Add security labels
 LABEL maintainer="matthieu.alix@example.com"
@@ -47,13 +47,13 @@ RUN chown -R nginx:nginx /usr/share/nginx/html/recontent && \
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost/health || exit 1
+  CMD wget --quiet --tries=1 --spider http://127.0.0.1/health || exit 1
 
 # Expose port 80 (internal)
 EXPOSE 80
 
 # Run as nginx user (already configured in base image)
-# nginx:alpine runs as nginx by default
+# nginx:1.30.6-alpine runs as nginx by default
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]

@@ -1,19 +1,19 @@
 # Configuration Docker Compose - ReContent
 
 **Date:** 28 octobre 2025
-**Version:** 1.0
+**Version:** 1.1 (mise à jour le 12 novembre 2026 : retrait de la configuration Nexus, ajout du fichier de production)
 
 ---
 
 ## Vue d'ensemble
 
-ReContent utilise **3 fichiers docker-compose** pour gérer différents environnements :
+ReContent utilise **3 fichiers docker-compose** :
 
 ```
 recontent/
 ├── docker-compose.dev.yml     (Dev PC, pas de Traefik)
-├── docker-compose.nexus.yml   (Test Nexus, Traefik HTTP)
-└── docker-compose.yml         (Prod VPS, Traefik HTTPS)
+├── docker-compose.yml         (Traefik en HTTP : tests locaux et CI)
+└── docker-compose.prod.yml    (Prod VPS, Traefik HTTPS)
 ```
 
 ---
@@ -42,92 +42,68 @@ recontent/
 
 ---
 
-## 2. docker-compose.nexus.yml
+## 2. docker-compose.yml
 
-**Usage :** Test local avec Traefik HTTP
-**Commande :** `docker compose -f docker-compose.nexus.yml up -d`
-
-**📅 Ajouté le :** 28 octobre 2025
-**🎯 Objectif :** Reproduire l'architecture VPS en local pour tests pré-production
+**Usage :** Tests locaux avec Traefik en HTTP, et tests d'intégration de la CI (GitHub Actions)
+**Commande :** `docker compose up -d recontent-api nginx-recontent`
 
 ### Caractéristiques
 
 - **Network :**
-  - Interne : `nexus-recontent`
-  - Externe : `traefik-network` (partagé avec autres services)
-- **Ports exposés :** ❌ Non (Traefik only)
+  - Interne : `recontent-network`
+  - Externe : `traefik-network`
 - **Traefik :**
-  - **Frontend :** `recontent.nexus.local` → port 80
-  - **API :** `recontent.nexus.local/api` → port 3002
-  - EntryPoint : `web` (HTTP, pas HTTPS)
-  - Middleware : rewrite `/api/recontent/*` → `/*`
-  - Priority : 100 pour API (route avant frontend)
-- **NODE_ENV :** production
-- **Images :** `recontent-api:nexus`, `recontent-frontend:nexus`
-
-### Différences vs VPS
-
-| Aspect | Nexus | VPS |
-|--------|-------|-----|
-| Domain | `recontent.nexus.local` | `recontent.devamalix.fr` |
-| EntryPoint | `web` (HTTP) | `websecure` (HTTPS) |
-| TLS | ❌ Non | ✅ Let's Encrypt |
-| HSTS headers | Désactivés | Activés (31536000s) |
-| Watchtower | Désactivé | Activé |
+  - Domaine : `recontent.localhost` (HTTP, entrypoint `web`, pas de HTTPS)
+  - La CI appelle Traefik avec `-H "Host: recontent.localhost"`
+- **Services :** `recontent-api`, `nginx-recontent` (frontend buildé servi par nginx)
 
 ### Quand l'utiliser
 
-- ✅ Tester config Traefik avant déploiement VPS
-- ✅ Valider routing frontend/API
-- ✅ Valider middleware de rewrite
-- ✅ Tester architecture identique à prod (sans HTTPS)
+- ✅ Valider le routage via Traefik en local
+- ✅ Tests d'intégration de la CI
 - ❌ Pas pour dev rapide (utiliser docker-compose.dev.yml)
+- ❌ Pas pour la production (utiliser docker-compose.prod.yml)
 
 ---
 
-## 3. docker-compose.yml
+## 3. docker-compose.prod.yml
 
 **Usage :** Production VPS
-**Commande :** `docker compose up -d` (fichier par défaut)
+**Commande :** `docker compose up -d --build` (sélectionné par `COMPOSE_FILE` dans le `.env` du VPS, non versionné)
 
 ### Caractéristiques
 
 - **Network :**
-  - Interne : `nexus-recontent`
+  - Interne : `nexus-recontent` (nom historique conservé : il correspond au réseau déjà existant sur le VPS)
   - Externe : `traefik-network`
-- **Ports exposés :** ❌ Non (Traefik only, sécurité)
+- **Ports exposés :** ❌ Non (Traefik only)
 - **Traefik :**
   - **Frontend :** `recontent.devamalix.fr` → port 80
-  - **API :** `recontent.devamalix.fr/api` → port 3002
-  - EntryPoint : `websecure` (HTTPS:443)
-  - TLS : `certresolver=letsencrypt` (auto-certificat)
+  - **API :** `recontent.devamalix.fr/api` → port 3002, rewrite `/api/recontent/*` → `/*`
+  - EntryPoint : `websecure` (HTTPS:443), TLS `certresolver=letsencrypt`
   - Security headers : HSTS complets
-  - Watchtower : auto-update activé
+- **Conteneurs :** `nexus-recontent-api`, `nexus-recontent-frontend`
+- **Images :** tags figés (`recontent-api:20261108`, `recontent-frontend:20261108`)
 - **NODE_ENV :** production
-- **Images :** `recontent-api:latest`, `recontent-frontend:latest`
 
-### Quand l'utiliser
+### Déploiement
 
-- Production sur VPS (37.59.115.242)
-- Déploiement final avec HTTPS
-- Environnement clients réels
+Par la CI à chaque push sur `main` (workflow GitHub Actions). Aucune modification directe dans `~/recontent`.
 
 ---
 
 ## Workflow de déploiement
 
 ```
-PC dev (develop-extern)
+PC dev
     ↓
   docker-compose.dev.yml
-    ↓ (git push)
-Nexus (develop-home)
-    ↓
-  docker-compose.nexus.yml  ← Test pré-prod
-    ↓ (git merge → main)
+    ↓ (branche, PR, CI)
+  docker-compose.yml  ← tests d'intégration CI (Traefik HTTP)
+    ↓ (merge sur main)
 VPS (main)
     ↓
-  docker-compose.yml  ← Production
+  docker-compose.prod.yml  ← Production
 ```
 
 ---
@@ -147,28 +123,6 @@ docker compose -f docker-compose.dev.yml up --build
 docker compose -f docker-compose.dev.yml down
 ```
 
-### Nexus (test)
-
-```bash
-# SSH vers Nexus
-ssh matth@nexus.local
-
-# Aller dans le projet
-cd /home/matth/nexus/dev-web/recontent
-
-# Pull dernières modifs
-git pull origin develop-home
-
-# Démarrer avec config Nexus
-docker compose -f docker-compose.nexus.yml up -d --build
-
-# Voir logs
-docker compose -f docker-compose.nexus.yml logs -f
-
-# Arrêter
-docker compose -f docker-compose.nexus.yml down
-```
-
 ### VPS (prod)
 
 ```bash
@@ -178,10 +132,10 @@ ssh ubuntu@37.59.115.242
 # Aller dans le projet
 cd ~/recontent
 
-# Pull dernières modifs
-git pull origin main
+# Mettre à jour (déployé par la CI ; à la main : après fusion sur main)
+git pull --ff-only
 
-# Démarrer (utilise docker-compose.yml par défaut)
+# Démarrer (fichier de prod via COMPOSE_FILE)
 docker compose up -d --build
 
 # Voir logs
@@ -198,29 +152,8 @@ docker compose down
 | Fichier | Environnement | Domain | HTTPS | Ports exposés | Utilisation |
 |---------|---------------|--------|-------|---------------|-------------|
 | **dev.yml** | PC local | localhost | ❌ | ✅ 3002, 8090 | Dev rapide |
-| **nexus.yml** | Nexus (test) | recontent.nexus.local | ❌ | ❌ Traefik | Test pré-prod |
-| **yml** (défaut) | VPS (prod) | recontent.devamalix.fr | ✅ | ❌ Traefik | Production |
-
----
-
-## Migration d'une config à l'autre
-
-### Nexus → VPS
-
-Modifications nécessaires dans les labels Traefik :
-
-```yaml
-# AVANT (Nexus)
-- "traefik.http.routers.recontent-api-nexus.rule=Host(`recontent.nexus.local`) && PathPrefix(`/api`)"
-- "traefik.http.routers.recontent-api-nexus.entrypoints=web"
-
-# APRÈS (VPS)
-- "traefik.http.routers.recontent-api.rule=Host(`recontent.devamalix.fr`) && PathPrefix(`/api`)"
-- "traefik.http.routers.recontent-api.entrypoints=websecure"
-- "traefik.http.routers.recontent-api.tls.certresolver=letsencrypt"
-```
-
-**✅ Avec les 3 fichiers, plus besoin de modifier manuellement !**
+| **yml** (base) | Local / CI | recontent.localhost | ❌ | ❌ Traefik | Tests d'intégration |
+| **prod.yml** | VPS (prod) | recontent.devamalix.fr | ✅ | ❌ Traefik | Production |
 
 ---
 
@@ -236,7 +169,7 @@ sudo lsof -i :3002
 docker compose -f docker-compose.dev.yml down
 ```
 
-### Traefik ne détecte pas le service (nexus.yml)
+### Traefik ne détecte pas le service
 
 ```bash
 # Vérifier que traefik-network existe
@@ -245,7 +178,7 @@ docker network ls | grep traefik
 # Créer si manquant
 docker network create traefik-network
 
-# Vérifier labels
+# Vérifier labels (prod)
 docker inspect nexus-recontent-api | grep traefik
 ```
 
@@ -256,8 +189,7 @@ docker inspect nexus-recontent-api | grep traefik
 nslookup recontent.devamalix.fr
 
 # Voir logs Traefik
-cd ~/traefik
-docker compose logs | grep letsencrypt
+docker logs traefik 2>&1 | grep -i acme
 
 # Attendre 1-2 minutes pour génération auto
 ```
@@ -265,5 +197,5 @@ docker compose logs | grep letsencrypt
 ---
 
 **Auteur :** MatthALXdev
-**Dernière mise à jour :** 28 octobre 2025
+**Dernière mise à jour :** 12 novembre 2026
 **Version ReContent :** 1.2.0

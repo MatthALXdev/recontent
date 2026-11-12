@@ -94,14 +94,14 @@ services:
       timeout: 5s
       retries: 3
 
-    # Labels Traefik pour routage via recontent.nexus.local
+    # Labels Traefik pour routage via recontent.localhost
     labels:
       # Activation Traefik
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-network"
 
       # Router HTTP (pas HTTPS en local)
-      - "traefik.http.routers.recontent.rule=Host(`recontent.nexus.local`)"
+      - "traefik.http.routers.recontent.rule=Host(`recontent.localhost`)"
       - "traefik.http.routers.recontent.entrypoints=web"
       - "traefik.http.routers.recontent.service=recontent"
 

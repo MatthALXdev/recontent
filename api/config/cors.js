@@ -16,7 +16,7 @@ const allowedOrigins = isProduction
       'http://localhost:5173',
       'http://127.0.0.1:8090',
       'http://127.0.0.1:5173',
-      'http://recontent.nexus.local',
+      'http://recontent.localhost',
     ];
 
 // CORS options

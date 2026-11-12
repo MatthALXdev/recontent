@@ -191,13 +191,13 @@ jobs:
         run: |
           # Test Frontend
           curl -f http://localhost/recontent/ \
-            -H "Host: recontent.nexus.local" \
+            -H "Host: recontent.localhost" \
             || (echo "❌ Frontend routing failed" && exit 1)
           echo "✅ Frontend accessible via Traefik"
 
           # Test API
           curl -f http://localhost/api/recontent/health \
-            -H "Host: recontent.nexus.local" \
+            -H "Host: recontent.localhost" \
             || (echo "❌ API routing failed" && exit 1)
           echo "✅ API accessible via Traefik"
 

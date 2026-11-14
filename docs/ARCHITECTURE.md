@@ -668,7 +668,7 @@ module.exports = { validateGenerate };
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│              Docker Host (VPS/Nexus)                      │
+│              Docker Host (VPS)                            │
 │                                                            │
 │  ┌──────────────────┐  (one-shot build)                  │
 │  │ recontent-       │  Image: node:20-alpine             │
